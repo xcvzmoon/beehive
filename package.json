@@ -6,10 +6,17 @@
     "dev": "nitro dev",
     "preview": "node .output/server/index.mjs",
     "format": "prettier . --write --ignore-path .prettierignore",
-    "lint": "oxlint --type-aware --fix -D correctness --ignore-path .gitignore"
+    "lint": "oxlint --type-aware --fix -D correctness --ignore-path .gitignore",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:pull": "drizzle-kit pull",
+    "db:studio": "drizzle-kit studio",
+    "db:check": "drizzle-kit check"
   },
   "devDependencies": {
     "@prettier/plugin-oxc": "^0.0.5",
+    "@types/pg": "^8.15.6",
+    "drizzle-kit": "^0.31.7",
     "h3": "^1.15.4",
     "nitropack": "^2.12.4",
     "oxlint": "^1.29.0",
@@ -20,6 +27,11 @@
   },
   "dependencies": {
     "add": "^2.0.6",
-    "h3-compression": "^0.3.2"
+    "drizzle-orm": "^0.44.7",
+    "drizzle-query-logger": "^1.1.1",
+    "drizzle-zod": "^0.8.3",
+    "h3-compression": "^0.3.2",
+    "pg": "^8.16.3",
+    "zod": "^4.1.12"
   }
 }
