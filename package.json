@@ -1,0 +1,19 @@
+{
+  "name": "@xcvzmoon/beehive",
+  "private": true,
+  "scripts": {
+    "build": "nitro build",
+    "dev": "nitro dev",
+    "preview": "node .output/server/index.mjs",
+    "format": "prettier . --write --ignore-path .prettierignore",
+    "lint": "oxlint --type-aware --fix -D correctness --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "@prettier/plugin-oxc": "^0.0.5",
+    "h3": "^1.15.4",
+    "nitropack": "^2.12.4",
+    "oxlint": "^1.29.0",
+    "oxlint-tsgolint": "^0.8.0",
+    "prettier": "^3.6.2"
+  }
+}

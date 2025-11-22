@@ -1,0 +1,39 @@
+# Node modules
+node_modules/
+
+# Build output
+.output/
+dist/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Dependency lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Nitro specific
+.nitro/
+
+# Misc
+.DS_Store
+
+# Ignore coverage and test output
+coverage/
+
+# Ignore local config
+*.local.js
+*.local.ts
+
+# Ignore IDE and editor folders
+.vscode/
+.idea/
+
+# Ignore temporary files
+*.tmp
+*.swp
