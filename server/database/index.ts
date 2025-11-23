@@ -3,6 +3,8 @@ import { useRuntimeConfig } from 'nitropack/runtime';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { EnhancedQueryLogger } from 'drizzle-query-logger';
+import { applicationsTable } from '../database/schemas/public/applications';
+import { servicesTable } from '../database/schemas/public/services';
 
 export const poolConfig = z
   .object({
@@ -18,4 +20,8 @@ export const poolConfig = z
 export const db = drizzle({
   client: new Pool(poolConfig),
   logger: new EnhancedQueryLogger(),
+  schema: {
+    applications: applicationsTable,
+    services: servicesTable,
+  },
 });
