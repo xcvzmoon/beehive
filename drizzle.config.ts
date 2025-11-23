@@ -1,23 +1,14 @@
-import { z } from 'zod';
+import { poolConfigSchema } from './server/types/pool-config';
 import { defineConfig } from 'drizzle-kit';
 
-const poolConfig = z
-  .object({
-    host: z.string(),
-    port: z.number(),
-    database: z.string(),
-    user: z.string(),
-    password: z.string(),
-    ssl: z.boolean(),
-  })
-  .parse({
-    host: process.env.NITRO_DB_HOST,
-    port: Number(process.env.NITRO_DB_PORT),
-    database: process.env.NITRO_DB_DATABASE,
-    user: process.env.NITRO_DB_USER,
-    password: process.env.NITRO_DB_PASSWORD,
-    ssl: process.env.NITRO_DB_SSL === 'true',
-  });
+const poolConfig = poolConfigSchema.parse({
+  host: process.env.NITRO_DB_HOST,
+  port: Number(process.env.NITRO_DB_PORT),
+  database: process.env.NITRO_DB_DATABASE,
+  user: process.env.NITRO_DB_USER,
+  password: process.env.NITRO_DB_PASSWORD,
+  ssl: process.env.NITRO_DB_SSL === 'true',
+});
 
 export default defineConfig({
   dialect: 'postgresql',
