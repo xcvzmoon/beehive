@@ -13,5 +13,8 @@ export default defineNitroConfig({
       password: '',
       ssl: false,
     },
+    api: {
+      baseURL: '',
+    },
   },
 });
