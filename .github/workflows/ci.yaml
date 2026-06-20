@@ -1,0 +1,42 @@
+name: CI (Format, Lint, Typecheck, and Build)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Format, Lint, Typecheck, and Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Git Repo
+        uses: actions/checkout@v5
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: '26'
+          cache: true
+          run-install: false
+
+      - name: Install Dependencies
+        run: vp ci
+
+      - name: Check Files
+        run: vp run check
+
+      - name: Verify Types
+        run: vp run typecheck
+
+      - name: Build Nitro
+        run: vp run build

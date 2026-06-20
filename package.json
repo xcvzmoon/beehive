@@ -1,0 +1,37 @@
+{
+  "name": "beehive",
+  "version": "0.0.0",
+  "description": "Composable AI inference API built on Nitro",
+  "type": "module",
+  "imports": {
+    "#*": "./*"
+  },
+  "scripts": {
+    "build": "nitro build",
+    "dev": "nitro dev",
+    "preview": "nitro preview",
+    "prepare": "vp config",
+    "fmt": "vp fmt",
+    "lint": "vp lint",
+    "typecheck": "tsc --noEmit",
+    "release:patch": "changelogen --patch --release && git push --follow-tags",
+    "release:minor": "changelogen --minor --release && git push --follow-tags",
+    "release:major": "changelogen --major --release && git push --follow-tags",
+    "release:dry": "changelogen --dry"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "changelogen": "^0.6.2",
+    "nitro": "latest",
+    "typescript": "7.0.1-rc",
+    "vite-plus": "catalog:"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.8.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@11.8.0"
+}
