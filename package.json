@@ -13,6 +13,7 @@
     "prepare": "vp config",
     "fmt": "vp fmt",
     "lint": "vp lint",
+    "check": "vp check",
     "typecheck": "tsc --noEmit",
     "release:patch": "changelogen --patch --release && git push --follow-tags",
     "release:minor": "changelogen --minor --release && git push --follow-tags",

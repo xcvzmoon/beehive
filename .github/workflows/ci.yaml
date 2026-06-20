@@ -32,10 +32,10 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Check Files
-        run: vp run check
+        run: vpr check
 
       - name: Verify Types
-        run: vp run typecheck
+        run: vpr typecheck
 
       - name: Build Nitro
-        run: vp run build
+        run: vpr build
