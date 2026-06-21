@@ -26,7 +26,7 @@ organizations, workspaces, users, ai_chats, ai_messages, ai_models.
 
 ## Relations
 
-Has one matching vector row in exactly one ai*embedding_vectors*\* table based on dimensions.
+Belongs to `aiModel`. Has one matching vector row in exactly one ai*embedding_vectors*\* table based on dimensions.
 
 ## Notes
 
