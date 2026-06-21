@@ -4,6 +4,18 @@
 
 Composable AI inference API built on Nitro
 
+## Authentication Documentation
+
+For authentication endpoints, enabled flows, Redis-backed storage, and email-template setup, see:
+
+- [`docs/authentication/README.md`](./docs/authentication/README.md)
+
+## Mailer Documentation
+
+For SMTP configuration, rendering, retries, deduplication, and circuit-breaker behavior, see:
+
+- [`docs/mailer/README.md`](./docs/mailer/README.md)
+
 ## Database Documentation
 
 For questions about the database schema, tables, relationships, or how each table should be used, see the database docs:

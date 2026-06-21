@@ -34,4 +34,4 @@ organizations, workspaces, users, ai_configurations, ai_providers, ai_models.
 
 ## Relations
 
-Has many messages, embedding records, and usage events.
+Belongs to `aiProvider` and `aiModel`; has many messages, embedding records, and usage events.
