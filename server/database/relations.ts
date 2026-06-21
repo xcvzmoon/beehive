@@ -284,8 +284,8 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.aiChats.configurationId,
       to: r.aiConfigurations.id,
     }),
-    provider: r.one.aiProviders({ from: r.aiChats.providerId, to: r.aiProviders.id }),
-    model: r.one.aiModels({ from: r.aiChats.modelId, to: r.aiModels.id }),
+    aiProvider: r.one.aiProviders({ from: r.aiChats.providerId, to: r.aiProviders.id }),
+    aiModel: r.one.aiModels({ from: r.aiChats.modelId, to: r.aiModels.id }),
     messages: r.many.aiMessages({ from: r.aiChats.id, to: r.aiMessages.chatId }),
     embeddingRecords: r.many.aiEmbeddingRecords({
       from: r.aiChats.id,
@@ -358,7 +358,7 @@ export const relations = defineRelations(schema, (r) => ({
     user: r.one.users({ from: r.aiEmbeddingRecords.userId, to: r.users.id }),
     chat: r.one.aiChats({ from: r.aiEmbeddingRecords.chatId, to: r.aiChats.id }),
     message: r.one.aiMessages({ from: r.aiEmbeddingRecords.messageId, to: r.aiMessages.id }),
-    model: r.one.aiModels({ from: r.aiEmbeddingRecords.modelId, to: r.aiModels.id }),
+    aiModel: r.one.aiModels({ from: r.aiEmbeddingRecords.modelId, to: r.aiModels.id }),
     vector384: r.one.aiEmbeddingVectors384({
       from: r.aiEmbeddingRecords.id,
       to: r.aiEmbeddingVectors384.recordId,
