@@ -4,6 +4,30 @@
 
 Composable AI inference API built on Nitro
 
+## AI API
+
+Route reference, request flow, and cURL examples are documented in [`docs/ai/README.md`](./docs/ai/README.md).
+
+### Run seeds
+
+Run the seeds in this order after applying the current database schema:
+
+1. `vpr db:seed:catalog`
+2. Start Ollama and configure `OLLAMA_BASE_URL` if Ollama is used.
+3. `vpr db:sync:ollama-models`
+
+Detailed seed purpose and contents are in [`docs/seeds/README.md`](./docs/seeds/README.md).
+
+### Consume AI routes
+
+1. Sign in and keep the session cookie.
+2. Create an organization, then a workspace.
+3. Configure that workspace with a seeded provider and model.
+4. Create an API key scoped for `models:read` and/or `inference:responses`.
+5. Call `GET /api/v1/models` or `POST /api/v1/responses` with `Authorization: Bearer <api-key>`.
+
+See the [AI API usage example](./docs/ai/README.md#usage-example) for complete requests.
+
 ## Authentication Documentation
 
 For authentication endpoints, enabled flows, Redis-backed storage, and email-template setup, see:
