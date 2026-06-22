@@ -1,5 +1,8 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
+  foreignKey,
   halfvec,
   index,
   integer,
@@ -128,10 +131,14 @@ export const organizationMembers = beehive.table(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    role: text('role').notNull().default('member'),
+    role: text('role').notNull().default('viewer'),
     metadata: jsonb('metadata'),
   },
   (table) => [
+    check(
+      'organization_member_role_check',
+      sql`${table.role} IN ('owner', 'admin', 'billing_admin', 'security_admin', 'member')`,
+    ),
     uniqueIndex('organization_member_organizationId_userId_idx').on(
       table.organizationId,
       table.userId,
@@ -181,6 +188,7 @@ export const workspaces = beehive.table(
     metadata: jsonb('metadata'),
   },
   (table) => [
+    uniqueIndex('workspace_id_organizationId_idx').on(table.id, table.organizationId),
     uniqueIndex('workspace_organizationId_slug_idx').on(table.organizationId, table.slug),
     index('workspace_organizationId_idx').on(table.organizationId),
     index('workspace_createdByUserId_idx').on(table.createdByUserId),
@@ -192,6 +200,9 @@ export const workspaceMembers = beehive.table(
   {
     ...generateUUID(),
     ...generateTimestamps(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
@@ -202,7 +213,22 @@ export const workspaceMembers = beehive.table(
     metadata: jsonb('metadata'),
   },
   (table) => [
+    check(
+      'workspace_member_role_check',
+      sql`${table.role} IN ('owner', 'developer', 'operator', 'analyst', 'viewer')`,
+    ),
+    foreignKey({
+      name: 'workspace_member_workspace_organization_fkey',
+      columns: [table.workspaceId, table.organizationId],
+      foreignColumns: [workspaces.id, workspaces.organizationId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'workspace_member_organization_user_fkey',
+      columns: [table.organizationId, table.userId],
+      foreignColumns: [organizationMembers.organizationId, organizationMembers.userId],
+    }).onDelete('cascade'),
     uniqueIndex('workspace_member_workspaceId_userId_idx').on(table.workspaceId, table.userId),
+    index('workspace_member_organizationId_idx').on(table.organizationId),
     index('workspace_member_userId_idx').on(table.userId),
   ],
 );
@@ -215,20 +241,28 @@ export const apiKeys = beehive.table(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
-    workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
     createdByUserId: uuid('created_by_user_id').references(() => users.id, {
       onDelete: 'set null',
     }),
     name: text('name').notNull(),
     keyPrefix: text('key_prefix').notNull(),
     keyHash: text('key_hash').notNull(),
-    scopes: jsonb('scopes'),
+    scopes: jsonb('scopes').notNull().default([]),
     lastUsedAt: timestamp('last_used_at'),
     expiresAt: timestamp('expires_at'),
     revokedAt: timestamp('revoked_at'),
     metadata: jsonb('metadata'),
   },
   (table) => [
+    check('api_key_scopes_array_check', sql`jsonb_typeof(${table.scopes}) = 'array'`),
+    foreignKey({
+      name: 'api_key_workspace_organization_fkey',
+      columns: [table.workspaceId, table.organizationId],
+      foreignColumns: [workspaces.id, workspaces.organizationId],
+    }).onDelete('cascade'),
     uniqueIndex('api_key_keyHash_idx').on(table.keyHash),
     index('api_key_organizationId_idx').on(table.organizationId),
     index('api_key_workspaceId_idx').on(table.workspaceId),
