@@ -141,6 +141,11 @@ export const relations = defineRelations(schema, (r) => ({
     }),
   },
   workspaceMembers: {
+    organization: r.one.organizations({
+      from: r.workspaceMembers.organizationId,
+      to: r.organizations.id,
+      optional: false,
+    }),
     workspace: r.one.workspaces({
       from: r.workspaceMembers.workspaceId,
       to: r.workspaces.id,
