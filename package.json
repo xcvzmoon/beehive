@@ -8,6 +8,7 @@
     "dev": "nitro dev",
     "preview": "nitro preview",
     "prepare": "vp config",
+    "prepare:effect": "effect-language-service patch",
     "fmt": "vp fmt",
     "lint": "vp lint",
     "check": "vp check",
@@ -30,8 +31,10 @@
     "@opentelemetry/api": "^1.9.1",
     "ai": "^6.0.208",
     "better-auth": "^1.6.20",
+    "consola": "^3.4.2",
     "drizzle-orm": "1.0.0-beta.22",
     "drizzle-query-logger": "^1.1.2",
+    "effect": "^3.21.4",
     "handlebars": "^4.7.9",
     "ioredis": "^5.11.1",
     "postgres": "^3.4.9",
@@ -40,6 +43,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@effect/language-service": "^0.86.2",
     "@types/node": "latest",
     "changelogen": "^0.6.2",
     "drizzle-kit": "1.0.0-beta.22",
