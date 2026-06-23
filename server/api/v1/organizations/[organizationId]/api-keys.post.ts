@@ -1,54 +1,79 @@
-import { defineHandler, HTTPError } from 'nitro';
-import { z } from 'zod';
-import { generateApiKey, hashApiKey } from '~/server/authentication/api-key.ts';
-import { insertApiKey } from '~/server/repositories/api-keys.ts';
+import { Effect, Schema } from 'effect';
+import { defineHandler } from 'nitro';
+import { generateApiKey } from '~/server/authentication/api-key.ts';
+import { insertApiKey } from '~/server/repositories/api-keys.repository.ts';
+import { insertAuditLog } from '~/server/repositories/audit-logs.repository.ts';
 import {
   getWorkspaceOrganizationId,
   requireOrganizationAdmin,
 } from '~/server/utils/authorization.ts';
+import { failHttp, parseJsonBodyWithSchema } from '~/server/utils/effects.ts';
 
-const scopeSchema = z.enum(['models:read', 'inference:responses', 'inference:embeddings']);
-const bodySchema = z.object({
-  name: z.string().min(1).max(100),
-  workspaceId: z.uuid(),
-  scopes: z.array(scopeSchema).min(1),
-  expiresAt: z.coerce.date().optional(),
+const scopeSchema = Schema.Literal('models:read', 'inference:responses', 'inference:embeddings');
+const bodySchema = Schema.Struct({
+  name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)),
+  workspaceId: Schema.UUID,
+  scopes: Schema.Array(scopeSchema).pipe(Schema.minItems(1)),
+  expiresAt: Schema.optional(Schema.DateFromString),
 });
 
 export default defineHandler(async (event) => {
   const organizationId = event.context.params?.organizationId;
   const userId = event.context.auth?.user.id;
 
-  if (!organizationId || !userId) {
-    throw new HTTPError({
-      status: 401,
-      statusText: 'Unauthorized',
-      message: 'A session is required',
+  const program = Effect.gen(function* program() {
+    if (!organizationId || !userId) {
+      return yield* failHttp({
+        status: 401,
+        statusText: 'Unauthorized',
+        message: 'A session is required',
+      });
+    }
+
+    yield* requireOrganizationAdmin(organizationId, userId);
+    const body = yield* parseJsonBodyWithSchema(event, bodySchema);
+    const workspaceOrganizationId = yield* getWorkspaceOrganizationId(body.workspaceId);
+
+    if (workspaceOrganizationId !== organizationId) {
+      return yield* failHttp({
+        status: 422,
+        statusText: 'Unprocessable Content',
+        message: 'The workspace does not belong to this organization',
+      });
+    }
+
+    const { key, keyHash, keyPrefix } = generateApiKey();
+    const apiKey = yield* insertApiKey({
+      organizationId,
+      workspaceId: body.workspaceId,
+      createdByUserId: userId,
+      name: body.name,
+      keyPrefix,
+      keyHash,
+      scopes: body.scopes,
+      expiresAt: body.expiresAt,
     });
-  }
 
-  await requireOrganizationAdmin(organizationId, userId);
-  const body = bodySchema.parse(await event.req.json());
+    if (apiKey) {
+      yield* insertAuditLog({
+        organizationId,
+        workspaceId: body.workspaceId,
+        actorUserId: userId,
+        apiKeyId: apiKey.id,
+        action: 'api_key.created',
+        targetType: 'api_key',
+        targetId: apiKey.id,
+        metadata: {
+          name: body.name,
+          keyPrefix,
+          scopes: body.scopes,
+          expiresAt: body.expiresAt?.toISOString(),
+        },
+      });
+    }
 
-  if ((await getWorkspaceOrganizationId(body.workspaceId)) !== organizationId) {
-    throw new HTTPError({
-      status: 422,
-      statusText: 'Unprocessable Content',
-      message: 'The workspace does not belong to this organization',
-    });
-  }
-
-  const key = generateApiKey();
-  const apiKey = await insertApiKey({
-    organizationId,
-    workspaceId: body.workspaceId,
-    createdByUserId: userId,
-    name: body.name,
-    keyPrefix: key.slice(0, 11),
-    keyHash: hashApiKey(key),
-    scopes: body.scopes,
-    expiresAt: body.expiresAt,
+    return { ...apiKey, key };
   });
 
-  return { ...apiKey, key };
+  return Effect.runPromise(program);
 });

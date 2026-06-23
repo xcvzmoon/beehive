@@ -1,31 +1,35 @@
-import { defineHandler, HTTPError } from 'nitro';
-import { z } from 'zod';
-import { createWorkspaceWithOwner } from '~/server/repositories/workspaces.ts';
+import { Effect, Schema } from 'effect';
+import { defineHandler } from 'nitro';
+import { insertWorkspaceWithOwner } from '~/server/repositories/workspaces.repository.ts';
 import { requireOrganizationAdmin } from '~/server/utils/authorization.ts';
+import { failHttp, parseJsonBodyWithSchema } from '~/server/utils/effects.ts';
 
-const bodySchema = z.object({ name: z.string().min(1), slug: z.string().min(1).max(100) });
+const bodySchema = Schema.Struct({
+  name: Schema.String.pipe(Schema.minLength(1)),
+  slug: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)),
+});
 
 export default defineHandler(async (event) => {
   const organizationId = event.context.params?.organizationId;
   const userId = event.context.auth?.user.id;
 
-  if (!organizationId || !userId) {
-    throw new HTTPError({
-      status: 401,
-      statusText: 'Unauthorized',
-      message: 'A session is required',
-    });
-  }
+  const program = Effect.gen(function* program() {
+    if (!organizationId || !userId) {
+      return yield* failHttp({
+        status: 401,
+        statusText: 'Unauthorized',
+        message: 'A session is required',
+      });
+    }
 
-  await requireOrganizationAdmin(organizationId, userId);
-  const body = bodySchema.parse(await event.req.json());
+    yield* requireOrganizationAdmin(organizationId, userId);
+    const body = yield* parseJsonBodyWithSchema(event, bodySchema);
 
-  return createWorkspaceWithOwner(
-    { ...body, organizationId, createdByUserId: userId },
-    {
-      organizationId,
-      userId,
-      role: 'owner',
-    },
-  );
+    return yield* insertWorkspaceWithOwner(
+      { ...body, organizationId, createdByUserId: userId },
+      { organizationId, userId, role: 'owner' },
+    );
+  });
+
+  return Effect.runPromise(program);
 });

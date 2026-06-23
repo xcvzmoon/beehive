@@ -1,5 +1,6 @@
 import type { InsertAiProviderInput } from '~/server/types/ai-provider.ts';
-import { updateAiProviderCatalog } from '~/server/repositories/ai-providers.ts';
+import { Effect } from 'effect';
+import { insertAiProvider } from '~/server/repositories/ai-providers.repository.ts';
 
 const providers = [
   {
@@ -60,8 +61,4 @@ const providers = [
   },
 ] satisfies InsertAiProviderInput[];
 
-await Promise.all(
-  providers.map(async (provider) => {
-    await updateAiProviderCatalog(provider);
-  }),
-);
+await Effect.runPromise(Effect.all(providers.map((provider) => insertAiProvider(provider))));

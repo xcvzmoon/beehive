@@ -30,6 +30,7 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 - Prefer type-only imports with `import type`.
 - Prefer `function` keyword over `const` in declaring functions.
 - Never run database-related scripts `db:*`
+- Functions in repository should start with `select`, `insert`, `update`, and `delete`
 
 ## Editing Guidance
 

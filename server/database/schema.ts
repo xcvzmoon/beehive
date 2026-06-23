@@ -264,6 +264,7 @@ export const apiKeys = beehive.table(
       foreignColumns: [workspaces.id, workspaces.organizationId],
     }).onDelete('cascade'),
     uniqueIndex('api_key_keyHash_idx').on(table.keyHash),
+    uniqueIndex('api_key_keyPrefix_idx').on(table.keyPrefix),
     index('api_key_organizationId_idx').on(table.organizationId),
     index('api_key_workspaceId_idx').on(table.workspaceId),
     index('api_key_createdByUserId_idx').on(table.createdByUserId),

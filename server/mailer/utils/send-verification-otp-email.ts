@@ -1,40 +1,53 @@
 import type { EmailOTPType, SendVerificationOTPEmailOptions } from '~/server/mailer/types.ts';
+import { Effect } from 'effect';
+import { MailerError } from '~/server/errors/mailer.ts';
 import { loadEmailTemplate } from '~/server/mailer/utils/load-email-template.ts';
 import { sendEmail } from '~/server/mailer/utils/send-email.ts';
 import { formatDuration } from '~/server/utils/formatter.ts';
+import { logger } from '~/server/utils/logger.ts';
 
-export async function sendVerificationOTPEmail(options: SendVerificationOTPEmailOptions) {
-  const expirationLabel = formatDuration(options.expiresInSeconds);
-  const purpose = getOTPPurpose(options.type);
+export function sendVerificationOTPEmail(options: SendVerificationOTPEmailOptions) {
+  return Effect.gen(function* sendVerificationOTPEmailProgram() {
+    const expirationLabel = formatDuration(options.expiresInSeconds);
+    const purpose = getOTPPurpose(options.type);
 
-  const otpTemplate = await loadEmailTemplate('otp.hbs');
-  const result = await sendEmail({
-    to: options.to,
-    subject: getOTPSubject(options.type),
-    preheader: `Your verification code will expire in ${expirationLabel}.`,
-    text: [
-      `Your verification code is: ${options.otp}`,
-      '',
-      `Use this code to ${purpose}.`,
-      `This code expires in ${expirationLabel}.`,
-      '',
-      `If you did not request this code for ${options.to}, you can safely ignore this email.`,
-    ].join('\n'),
-    handlebars: otpTemplate,
-    handlebarsVars: {
-      otp: options.otp,
-      recipientEmail: options.to,
-      expirationLabel,
-      purpose,
-    },
+    const otpTemplate = yield* loadEmailTemplate('otp.hbs');
+    const result = yield* sendEmail({
+      to: options.to,
+      subject: getOTPSubject(options.type),
+      preheader: `Your verification code will expire in ${expirationLabel}.`,
+      text: [
+        `Your verification code is: ${options.otp}`,
+        '',
+        `Use this code to ${purpose}.`,
+        `This code expires in ${expirationLabel}.`,
+        '',
+        `If you did not request this code for ${options.to}, you can safely ignore this email.`,
+      ].join('\n'),
+      handlebars: otpTemplate,
+      handlebarsVars: {
+        otp: options.otp,
+        recipientEmail: options.to,
+        expirationLabel,
+        purpose,
+      },
+    });
+
+    if (result.error) {
+      logger.error(result.error instanceof Error ? result.error.message : String(result.error));
+      return yield* Effect.fail(
+        new MailerError({
+          operation: 'sendVerificationOTPEmail',
+          message:
+            result.error instanceof Error
+              ? result.error.message
+              : 'Failed to send verification OTP email',
+        }),
+      );
+    }
+
+    return result.data;
   });
-
-  if (result.error) {
-    console.error(result.error);
-    throw result.error;
-  }
-
-  return result.data;
 }
 
 function getOTPPurpose(type: EmailOTPType) {

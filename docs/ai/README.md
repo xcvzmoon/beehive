@@ -21,9 +21,9 @@ Beehive exposes a tenant-scoped API under `/api/v1`. Management routes use a Bet
 2. Create a workspace in that organization. The caller becomes its workspace owner.
 3. Seed the provider catalog and, for Ollama, synchronize its installed models.
 4. Configure the workspace's default provider and chat model. Only enabled provider/model pairs can be selected.
-5. Create an API key for that workspace with the required scopes. Store the returned plaintext key securely; only its hash is stored.
-6. Call `/models` to discover models or `/responses` to run inference. API-key middleware verifies the key is present, unrevoked, unexpired, and scoped for the route.
-7. A successful response is persisted as an AI chat, user/assistant messages, and a usage event.
+5. Create an API key for that workspace with the required scopes. Store the returned plaintext key securely; only an HMAC hash is stored.
+6. Call `/models` to discover models or `/responses` to run inference. API-key middleware verifies the key format, prefix, HMAC hash, revocation status, expiration, and route scope, then updates `lastUsedAt`.
+7. API key creation/revocation is recorded in audit logs. A successful response is persisted as an AI chat, user/assistant messages, and a usage event.
 
 ## Usage example
 
@@ -51,7 +51,7 @@ curl -X POST http://localhost:3000/api/v1/organizations/<organization-id>/api-ke
   -d '{"name":"production inference","workspaceId":"<workspace-id>","scopes":["models:read","inference:responses"]}'
 ```
 
-Use the returned `key` to call inference:
+Use the returned `key` to call inference. API keys use the format `bh_<live|test>_v1_<publicId>_<secret>` and are shown only once.
 
 ```sh
 curl http://localhost:3000/api/v1/models \

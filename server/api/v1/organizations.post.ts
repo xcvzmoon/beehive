@@ -1,26 +1,32 @@
-import { defineHandler, HTTPError } from 'nitro';
-import { z } from 'zod';
-import { createOrganizationWithOwner } from '~/server/repositories/organizations.ts';
+import { Effect, Schema } from 'effect';
+import { defineHandler } from 'nitro';
+import { insertOrganizationWithOwner } from '~/server/repositories/organizations.repository.ts';
+import { failHttp, parseJsonBodyWithSchema } from '~/server/utils/effects.ts';
 
-const bodySchema = z.object({ name: z.string().min(1), slug: z.string().min(1).max(100) });
+const bodySchema = Schema.Struct({
+  name: Schema.String.pipe(Schema.minLength(1)),
+  slug: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)),
+});
 
 export default defineHandler(async (event) => {
-  const body = bodySchema.parse(await event.req.json());
   const userId = event.context.auth?.user.id;
 
-  if (!userId) {
-    throw new HTTPError({
-      status: 401,
-      statusText: 'Unauthorized',
-      message: 'A session is required',
-    });
-  }
+  const program = Effect.gen(function* program() {
+    if (!userId) {
+      return yield* failHttp({
+        status: 401,
+        statusText: 'Unauthorized',
+        message: 'A session is required',
+      });
+    }
 
-  return createOrganizationWithOwner(
-    { ...body, createdByUserId: userId },
-    {
-      userId,
-      role: 'owner',
-    },
-  );
+    const body = yield* parseJsonBodyWithSchema(event, bodySchema);
+
+    return yield* insertOrganizationWithOwner(
+      { ...body, createdByUserId: userId },
+      { userId, role: 'owner' },
+    );
+  });
+
+  return Effect.runPromise(program);
 });

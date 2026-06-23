@@ -27,4 +27,4 @@ Can reference the tenant, workspace, user, and API key involved in an action.
 
 ## Notes
 
-Use for events like api_key.created, ai.config.updated, chat.deleted, billing.changed.
+Use for events like `api_key.created`, `api_key.revoked`, `ai.config.updated`, `chat.deleted`, and `billing.changed`. API key creation and revocation currently write audit records with the actor, organization, workspace, target API key, and relevant metadata.
