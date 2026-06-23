@@ -2,14 +2,14 @@ import { Effect } from 'effect';
 import { selectOrganizationMember } from '~/server/repositories/organization-members.repository.ts';
 import { selectWorkspaceMember } from '~/server/repositories/workspace-members.repository.ts';
 import { selectWorkspaceOrganizationId } from '~/server/repositories/workspaces.repository.ts';
-import { bypassableRoles } from '~/server/utils/constants.ts';
+import { BYPASSABLE_ROLES } from '~/server/utils/constants.ts';
 import { failHttp } from '~/server/utils/effects.ts';
 
 export function requireOrganizationAdmin(organizationId: string, userId: string) {
   return Effect.gen(function* requireOrganizationAdminProgram() {
     const organizationMember = yield* selectOrganizationMember(organizationId, userId);
 
-    if (!organizationMember || !bypassableRoles.includes(organizationMember.role)) {
+    if (!organizationMember || !BYPASSABLE_ROLES.includes(organizationMember.role)) {
       yield* failHttp({
         status: 403,
         statusText: 'Forbidden',
