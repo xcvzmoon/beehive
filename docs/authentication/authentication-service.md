@@ -28,9 +28,13 @@ Sessions use a five-minute cookie cache. Authentication storage and rate-limit s
 - `SMTP_USER`
 - `SMTP_PASSWORD`
 - `SMTP_EMAIL`
+- `API_KEY_PEPPER`: server-side HMAC secret for hashing Beehive API keys; use at least 32 characters.
+- `API_KEY_ENVIRONMENT`: API key environment marker, either `live` or `test`.
 
 See [`.env.example`](../../.env.example) for the complete environment template.
 
 ## Operational Notes
 
 OTP codes expire after five minutes. Password reset links expire after one hour. OTPs are stored hashed and resend attempts rotate the existing code.
+
+Beehive API keys use the format `bh_<live|test>_v1_<publicId>_<secret>`. Only the prefix and an HMAC-SHA256 hash of the full key are stored. Successful API-key authentication updates `lastUsedAt`; creation and revocation are written to audit logs.

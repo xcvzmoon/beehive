@@ -23,7 +23,7 @@ Detailed seed purpose and contents are in [`docs/seeds/README.md`](./docs/seeds/
 1. Sign in and keep the session cookie.
 2. Create an organization, then a workspace.
 3. Configure that workspace with a seeded provider and model.
-4. Create an API key scoped for `models:read` and/or `inference:responses`.
+4. Create an API key scoped for `models:read` and/or `inference:responses`. API keys are returned once, use the format `bh_<live|test>_v1_<publicId>_<secret>`, and require `API_KEY_PEPPER` to be configured.
 5. Call `GET /api/v1/models` or `POST /api/v1/responses` with `Authorization: Bearer <api-key>`.
 
 See the [AI API usage example](./docs/ai/README.md#usage-example) for complete requests.
