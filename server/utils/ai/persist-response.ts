@@ -1,50 +1,53 @@
 import type { WorkspaceAiConfiguration } from '~/server/utils/ai/configuration.ts';
-import { createAiChatWithMessagesAndUsage } from '~/server/repositories/ai-chats.ts';
+import { Effect } from 'effect';
+import { insertAiChatWithMessagesAndUsage } from '~/server/repositories/ai-chats.repository.ts';
 
-export async function persistResponse(
+export function persistResponse(
   configuration: WorkspaceAiConfiguration,
   apiKeyId: string,
   input: Record<string, unknown>,
   response: unknown,
 ) {
-  const output = getOutputText(response);
-  const usage = getUsage(response);
+  return Effect.gen(function* persistResponseProgram() {
+    const output = getOutputText(response);
+    const usage = getUsage(response);
 
-  await createAiChatWithMessagesAndUsage(
-    {
-      organizationId: configuration.organizationId,
-      workspaceId: configuration.workspaceId,
-      configurationId: configuration.configurationId,
-      providerId: configuration.providerId,
-      modelId: configuration.modelId,
-      provider: configuration.providerKey,
-      model: configuration.modelName,
-    },
-    [
+    yield* insertAiChatWithMessagesAndUsage(
       {
         organizationId: configuration.organizationId,
         workspaceId: configuration.workspaceId,
-        role: 'user',
-        content: JSON.stringify(input),
+        configurationId: configuration.configurationId,
+        providerId: configuration.providerId,
+        modelId: configuration.modelId,
+        provider: configuration.providerKey,
+        model: configuration.modelName,
       },
+      [
+        {
+          organizationId: configuration.organizationId,
+          workspaceId: configuration.workspaceId,
+          role: 'user',
+          content: JSON.stringify(input),
+        },
+        {
+          organizationId: configuration.organizationId,
+          workspaceId: configuration.workspaceId,
+          role: 'assistant',
+          content: output,
+          parts: isRecord(response) ? response : null,
+        },
+      ],
       {
         organizationId: configuration.organizationId,
         workspaceId: configuration.workspaceId,
-        role: 'assistant',
-        content: output,
-        parts: isRecord(response) ? response : null,
+        apiKeyId,
+        providerId: configuration.providerId,
+        modelId: configuration.modelId,
+        operation: 'responses.create',
+        ...usage,
       },
-    ],
-    {
-      organizationId: configuration.organizationId,
-      workspaceId: configuration.workspaceId,
-      apiKeyId,
-      providerId: configuration.providerId,
-      modelId: configuration.modelId,
-      operation: 'responses.create',
-      ...usage,
-    },
-  );
+    );
+  });
 }
 
 function getOutputText(value: unknown) {
