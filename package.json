@@ -1,6 +1,6 @@
 {
   "name": "beehive",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Composable AI inference API built on Nitro",
   "type": "module",
   "scripts": {

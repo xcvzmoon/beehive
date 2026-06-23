@@ -1,6 +1,46 @@
 # Changelog
 
 
+## v0.0.2
+
+[compare changes](https://github.com/xcvzmoon/beehive/compare/v0.0.1...v0.0.2)
+
+### 🚀 Enhancements
+
+- **auth:** Harden API key lifecycle and auditing ([b2fc70b](https://github.com/xcvzmoon/beehive/commit/b2fc70b))
+- Add app logger ([3ffe447](https://github.com/xcvzmoon/beehive/commit/3ffe447))
+- Add tests ([8a66474](https://github.com/xcvzmoon/beehive/commit/8a66474))
+- Add test coverage for Effect flows and API routes ([1cc14b3](https://github.com/xcvzmoon/beehive/commit/1cc14b3))
+
+### 💅 Refactors
+
+- **effect:** Migrate HTTP boundaries to typed Effect flows ([3d1e3c4](https://github.com/xcvzmoon/beehive/commit/3d1e3c4))
+- **mailer:** Migrate email delivery to Effect ([428a138](https://github.com/xcvzmoon/beehive/commit/428a138))
+- **ai:** Add typed Effect errors for provider boundaries ([86df7fc](https://github.com/xcvzmoon/beehive/commit/86df7fc))
+- **repositories:** Extract shared database Effect helper ([3c0c074](https://github.com/xcvzmoon/beehive/commit/3c0c074))
+- Set server boundaries to typed Effect flows and harden API key lifecycle ([5e8b57f](https://github.com/xcvzmoon/beehive/commit/5e8b57f))
+
+### 📖 Documentation
+
+- Update API key lifecycle and Effect migration references ([b6f79a2](https://github.com/xcvzmoon/beehive/commit/b6f79a2))
+
+### 🏡 Chore
+
+- Add effect and consola ([f2c63c3](https://github.com/xcvzmoon/beehive/commit/f2c63c3))
+- Use effect runner ([6ca60c4](https://github.com/xcvzmoon/beehive/commit/6ca60c4))
+- Add app server config ([75ef377](https://github.com/xcvzmoon/beehive/commit/75ef377))
+- Use effect runner for seeders ([78122fe](https://github.com/xcvzmoon/beehive/commit/78122fe))
+- Add db tagged error ([d80106e](https://github.com/xcvzmoon/beehive/commit/d80106e))
+- **constants:** Add bypassable roles ([cff5658](https://github.com/xcvzmoon/beehive/commit/cff5658))
+- Use effect in persist response ([9cf6183](https://github.com/xcvzmoon/beehive/commit/9cf6183))
+- **agents:** Add instructions in naming repository funcs ([9611e83](https://github.com/xcvzmoon/beehive/commit/9611e83))
+- **db:** Add new scripts for migration ([5282269](https://github.com/xcvzmoon/beehive/commit/5282269))
+- Add test to process flow ([536ec56](https://github.com/xcvzmoon/beehive/commit/536ec56))
+
+### ❤️ Contributors
+
+- Mon Albert Gamil ([@xcvzmoon](https://github.com/xcvzmoon))
+
 ## v0.0.1
 
 
