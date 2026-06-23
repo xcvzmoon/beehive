@@ -37,5 +37,8 @@ jobs:
       - name: Verify Types
         run: vpr typecheck
 
+      - name: Run Tests
+        run: vp test
+
       - name: Build Nitro
         run: vpr build

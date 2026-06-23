@@ -2,3 +2,4 @@ vpr fmt
 vpr lint
 vpr typecheck
 vp staged
+vp test
