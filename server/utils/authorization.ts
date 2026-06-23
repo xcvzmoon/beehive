@@ -1,44 +1,52 @@
-import { HTTPError } from 'nitro';
-import { findOrganizationMember } from '~/server/repositories/organization-members.ts';
-import { findWorkspaceMember } from '~/server/repositories/workspace-members.ts';
-import { findWorkspaceOrganizationId } from '~/server/repositories/workspaces.ts';
+import { Effect } from 'effect';
+import { selectOrganizationMember } from '~/server/repositories/organization-members.repository.ts';
+import { selectWorkspaceMember } from '~/server/repositories/workspace-members.repository.ts';
+import { selectWorkspaceOrganizationId } from '~/server/repositories/workspaces.repository.ts';
+import { bypassableRoles } from '~/server/utils/constants.ts';
+import { failHttp } from '~/server/utils/effects.ts';
 
-export async function requireOrganizationAdmin(organizationId: string, userId: string) {
-  const membership = await findOrganizationMember(organizationId, userId);
+export function requireOrganizationAdmin(organizationId: string, userId: string) {
+  return Effect.gen(function* requireOrganizationAdminProgram() {
+    const organizationMember = yield* selectOrganizationMember(organizationId, userId);
 
-  if (!membership || !['owner', 'admin'].includes(membership.role)) {
-    throw new HTTPError({
-      status: 403,
-      statusText: 'Forbidden',
-      message: 'Organization admin access is required',
-    });
-  }
+    if (!organizationMember || !bypassableRoles.includes(organizationMember.role)) {
+      yield* failHttp({
+        status: 403,
+        statusText: 'Forbidden',
+        message: 'Organization admin access is required',
+      });
+    }
+  });
 }
 
-export async function requireWorkspaceOwner(workspaceId: string, userId: string) {
-  const membership = await findWorkspaceMember(workspaceId, userId);
+export function requireWorkspaceOwner(workspaceId: string, userId: string) {
+  return Effect.gen(function* requireWorkspaceOwnerProgram() {
+    const membership = yield* selectWorkspaceMember(workspaceId, userId);
 
-  if (membership?.role !== 'owner') {
-    throw new HTTPError({
-      status: 403,
-      statusText: 'Forbidden',
-      message: 'Workspace owner access is required',
-    });
-  }
+    if (membership?.role !== 'owner') {
+      return yield* failHttp({
+        status: 403,
+        statusText: 'Forbidden',
+        message: 'Workspace owner access is required',
+      });
+    }
 
-  return membership.organizationId;
+    return membership.organizationId;
+  });
 }
 
-export async function getWorkspaceOrganizationId(workspaceId: string) {
-  const organizationId = await findWorkspaceOrganizationId(workspaceId);
+export function getWorkspaceOrganizationId(workspaceId: string) {
+  return Effect.gen(function* getWorkspaceOrganizationIdProgram() {
+    const organizationId = yield* selectWorkspaceOrganizationId(workspaceId);
 
-  if (!organizationId) {
-    throw new HTTPError({
-      status: 404,
-      statusText: 'Not Found',
-      message: 'Workspace was not found',
-    });
-  }
+    if (!organizationId) {
+      return yield* failHttp({
+        status: 404,
+        statusText: 'Not Found',
+        message: 'Workspace was not found',
+      });
+    }
 
-  return organizationId;
+    return organizationId;
+  });
 }

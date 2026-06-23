@@ -1,5 +1,6 @@
-import { HTTPError } from 'nitro';
-import { findDefaultWorkspaceAiConfiguration } from '~/server/repositories/ai-configurations.ts';
+import { Effect } from 'effect';
+import { selectAiConfigurationOfDefaultWorkspace } from '~/server/repositories/ai-configurations.repository.ts';
+import { failHttp } from '~/server/utils/effects.ts';
 
 export type WorkspaceAiConfiguration = {
   configurationId: string;
@@ -17,16 +18,18 @@ export type WorkspaceAiConfiguration = {
   maxOutputTokens: number | null;
 };
 
-export async function getDefaultWorkspaceAiConfiguration(workspaceId: string) {
-  const configuration = await findDefaultWorkspaceAiConfiguration(workspaceId);
+export function getDefaultWorkspaceAiConfiguration(workspaceId: string) {
+  return Effect.gen(function* getDefaultWorkspaceAiConfigurationProgram() {
+    const configuration = yield* selectAiConfigurationOfDefaultWorkspace(workspaceId);
 
-  if (!configuration) {
-    throw new HTTPError({
-      status: 409,
-      statusText: 'Conflict',
-      message: 'The workspace does not have an enabled default AI configuration',
-    });
-  }
+    if (!configuration) {
+      return yield* failHttp({
+        status: 409,
+        statusText: 'Conflict',
+        message: 'The workspace does not have an enabled default AI configuration',
+      });
+    }
 
-  return configuration;
+    return configuration;
+  });
 }
