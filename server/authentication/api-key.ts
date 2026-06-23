@@ -1,6 +1,17 @@
-import type { H3Event } from 'h3';
-import { createHash, randomBytes } from 'node:crypto';
-import { findApiKeyByHash } from '~/server/repositories/api-keys.ts';
+import type { H3Event } from 'nitro';
+import { Effect } from 'effect';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { apiKeyConfig } from '~/server/config/api-key.ts';
+import {
+  selectApiKeyByPrefix,
+  updateApiKeyLastUsed,
+} from '~/server/repositories/api-keys.repository.ts';
+
+const API_KEY_PREFIX = 'bh';
+const API_KEY_VERSION = 'v1';
+const API_KEY_PUBLIC_ID_BYTES = 12;
+const API_KEY_SECRET_BYTES = 32;
+const API_KEY_PATTERN = /^bh_(live|test)_v1_([A-Za-z0-9_-]{16})_([A-Za-z0-9_-]{43})$/;
 
 export type ApiKeyContext = {
   apiKeyId: string;
@@ -9,34 +20,60 @@ export type ApiKeyContext = {
   scopes: string[];
 };
 
-export async function authenticateApiKey(event: H3Event): Promise<ApiKeyContext | undefined> {
-  const token = getBearerToken(event.req.headers.get('authorization'));
+export type GeneratedApiKey = {
+  key: string;
+  keyPrefix: string;
+  keyHash: string;
+};
 
-  if (!token) {
-    return undefined;
-  }
+export function authenticateApiKey(event: H3Event) {
+  return Effect.gen(function* authenticateApiKeyProgram() {
+    const token = getBearerToken(event.req.headers.get('authorization'));
 
-  const keyHash = hashApiKey(token);
-  const apiKey = await findApiKeyByHash(keyHash);
+    const parsedToken = token ? parseApiKey(token) : null;
 
-  if (!apiKey || apiKey.revokedAt || (apiKey.expiresAt && apiKey.expiresAt <= new Date())) {
-    return undefined;
-  }
+    if (!parsedToken) {
+      return null;
+    }
 
-  return {
-    apiKeyId: apiKey.id,
-    organizationId: apiKey.organizationId,
-    workspaceId: apiKey.workspaceId,
-    scopes: isStringArray(apiKey.scopes) ? apiKey.scopes : [],
-  };
+    const keyHash = hashApiKey(parsedToken.key);
+    const apiKey = yield* selectApiKeyByPrefix(parsedToken.keyPrefix);
+
+    if (
+      !apiKey ||
+      !isHashEqual(keyHash, apiKey.keyHash) ||
+      apiKey.revokedAt ||
+      (apiKey.expiresAt && apiKey.expiresAt <= new Date())
+    ) {
+      return null;
+    }
+
+    yield* updateApiKeyLastUsed(apiKey.id);
+
+    return {
+      apiKeyId: apiKey.id,
+      organizationId: apiKey.organizationId,
+      workspaceId: apiKey.workspaceId,
+      scopes: isStringArray(apiKey.scopes) ? apiKey.scopes : [],
+    } satisfies ApiKeyContext;
+  });
 }
 
 export function hashApiKey(value: string) {
-  return createHash('sha256').update(value).digest('hex');
+  return createHmac('sha256', apiKeyConfig.pepper).update(value).digest('hex');
 }
 
-export function generateApiKey() {
-  return `bh_${randomBytes(32).toString('base64url')}`;
+export function generateApiKey(): GeneratedApiKey {
+  const publicId = randomBytes(API_KEY_PUBLIC_ID_BYTES).toString('base64url');
+  const secret = randomBytes(API_KEY_SECRET_BYTES).toString('base64url');
+  const keyPrefix = `${API_KEY_PREFIX}_${apiKeyConfig.environment}_${API_KEY_VERSION}_${publicId}`;
+  const key = `${keyPrefix}_${secret}`;
+
+  return {
+    key,
+    keyPrefix,
+    keyHash: hashApiKey(key),
+  };
 }
 
 function getBearerToken(authorization: string | null) {
@@ -46,6 +83,30 @@ function getBearerToken(authorization: string | null) {
 
   const token = authorization.slice('Bearer '.length).trim();
   return token || null;
+}
+
+function parseApiKey(value: string) {
+  const match = API_KEY_PATTERN.exec(value);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, environment, publicId] = match;
+
+  return {
+    key: value,
+    environment,
+    publicId,
+    keyPrefix: `${API_KEY_PREFIX}_${environment}_${API_KEY_VERSION}_${publicId}`,
+  };
+}
+
+function isHashEqual(left: string, right: string) {
+  const leftBuffer = Buffer.from(left, 'hex');
+  const rightBuffer = Buffer.from(right, 'hex');
+
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function isStringArray(value: unknown): value is string[] {
