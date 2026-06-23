@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { emailOTP } from 'better-auth/plugins/email-otp';
+import { Effect } from 'effect';
 import { v7 as uuidV7 } from 'uuid';
 import { secondaryStorage } from '~/server/authentication/secondary-storage.ts';
 import { db } from '~/server/database/index.ts';
@@ -51,7 +52,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       const { email: to, name } = user;
       const expiresInSeconds = RESET_PASSWORD_EXPIRES_IN;
-      await sendResetPasswordEmail({ to, name, url, expiresInSeconds });
+      await Effect.runPromise(sendResetPasswordEmail({ to, name, url, expiresInSeconds }));
     },
   },
   plugins: [
@@ -70,7 +71,7 @@ export const auth = betterAuth({
       sendVerificationOTP: async ({ email, otp, type }) => {
         const to = email;
         const expiresInSeconds = OTP_VERIFICATION_EXPIRES_IN;
-        await sendVerificationOTPEmail({ to, otp, type, expiresInSeconds });
+        await Effect.runPromise(sendVerificationOTPEmail({ to, otp, type, expiresInSeconds }));
       },
     }),
   ],
