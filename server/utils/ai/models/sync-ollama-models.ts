@@ -1,44 +1,86 @@
-import { z } from 'zod';
+import { Effect, Schema } from 'effect';
 import { getOllamaBaseUrl } from '~/server/config/ai.ts';
-import { updateAiModelFromCatalog } from '~/server/repositories/ai-models.ts';
-import { findEnabledAiProviderByKey } from '~/server/repositories/ai-providers.ts';
+import { AiConfigurationError, AiProviderError } from '~/server/errors/ai.ts';
+import { updateAiModelFromCatalog } from '~/server/repositories/ai-models.repository.ts';
+import { selectAiProviderByKeyAndEnabled } from '~/server/repositories/ai-providers.repository.ts';
 
-const ollamaTagsResponseSchema = z.object({
-  models: z.array(z.object({ name: z.string() })).default([]),
+const ollamaTagsResponseSchema = Schema.Struct({
+  models: Schema.optionalWith(Schema.Array(Schema.Struct({ name: Schema.String })), {
+    default: () => [],
+  }),
 });
 
-export async function syncOllamaModels() {
-  const provider = await findEnabledAiProviderByKey('ollama');
+export function syncOllamaModels() {
+  return Effect.gen(function* syncOllamaModelsProgram() {
+    const provider = yield* selectAiProviderByKeyAndEnabled('ollama');
 
-  if (!provider) {
-    throw new Error('AI_CONFIG_ERROR: MISSING_OLLAMA_PROVIDER');
-  }
+    if (!provider) {
+      return yield* Effect.fail(
+        new AiConfigurationError({ message: 'AI_CONFIG_ERROR: MISSING_OLLAMA_PROVIDER' }),
+      );
+    }
 
-  const response = await fetch(`${getOllamaBaseUrl()}/api/tags`);
+    const response = yield* Effect.tryPromise({
+      try: async () => fetch(`${getOllamaBaseUrl()}/api/tags`),
+      catch: (error) =>
+        new AiProviderError({
+          provider: 'ollama',
+          operation: 'models.sync',
+          message: error instanceof Error ? error.message : 'Failed to fetch Ollama tags',
+        }),
+    });
 
-  if (!response.ok) {
-    throw new Error(`OLLAMA_MODEL_SYNC_ERROR: ${response.status}`);
-  }
+    if (!response.ok) {
+      return yield* Effect.fail(
+        new AiProviderError({
+          provider: 'ollama',
+          operation: 'models.sync',
+          message: `OLLAMA_MODEL_SYNC_ERROR: ${response.status}`,
+          status: response.status,
+        }),
+      );
+    }
 
-  const body: unknown = await response.json();
-  const { models } = ollamaTagsResponseSchema.parse(body);
+    const body = yield* Effect.tryPromise({
+      try: async () => response.json() as Promise<unknown>,
+      catch: (error) =>
+        new AiProviderError({
+          provider: 'ollama',
+          operation: 'models.sync',
+          message: error instanceof Error ? error.message : 'Ollama tags response was invalid JSON',
+          status: response.status,
+        }),
+    });
+    const { models } = yield* Schema.decodeUnknown(ollamaTagsResponseSchema)(body).pipe(
+      Effect.mapError(
+        (error) =>
+          new AiProviderError({
+            provider: 'ollama',
+            operation: 'models.sync',
+            message: 'Ollama tags response failed validation',
+            status: response.status,
+            data: error,
+          }),
+      ),
+    );
 
-  await Promise.all(
-    models.map(async ({ name }) => {
-      await updateAiModelFromCatalog({
-        providerId: provider.id,
-        name,
-        displayName: name,
-        kind: isEmbeddingModel(name) ? 'embedding' : 'chat',
-        supportsStreaming: true,
-        supportsTools: false,
-        supportsVision: false,
-        enabled: true,
-      });
-    }),
-  );
+    yield* Effect.all(
+      models.map(({ name }) =>
+        updateAiModelFromCatalog({
+          providerId: provider.id,
+          name,
+          displayName: name,
+          kind: isEmbeddingModel(name) ? 'embedding' : 'chat',
+          supportsStreaming: true,
+          supportsTools: false,
+          supportsVision: false,
+          enabled: true,
+        }),
+      ),
+    );
 
-  return { modelCount: models.length };
+    return { modelCount: models.length };
+  });
 }
 
 function isEmbeddingModel(name: string) {
